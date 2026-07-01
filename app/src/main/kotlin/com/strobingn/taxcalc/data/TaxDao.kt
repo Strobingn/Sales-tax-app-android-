@@ -35,6 +35,9 @@ interface TaxDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistory(history: CalculationHistory)
 
+    @Delete
+    suspend fun deleteHistoryItem(item: CalculationHistory)
+
     @Query("DELETE FROM calculation_history")
     suspend fun clearHistory()
 }

@@ -1,1 +1,2 @@
 # Temporarily disabled version catalog to stabilize build
+# All dependencies are hardcoded in app/build.gradle.kts
