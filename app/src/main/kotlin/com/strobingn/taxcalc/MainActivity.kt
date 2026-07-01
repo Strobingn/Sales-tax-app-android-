@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -392,7 +391,7 @@ fun CustomKeyPad(viewModel: TaxCalcViewModel) {
                     when {
                         key.isEmpty() -> Spacer(Modifier.weight(1f))
                         key == "DEL" -> KeypadButton(
-                            icon = { Icon(Icons.AutoMirrored.Filled.Backspace, null, tint = MaterialTheme.colorScheme.error) },
+                            icon = { Icon(Icons.Default.Backspace, null, tint = MaterialTheme.colorScheme.error) },
                             onClick = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); viewModel.backspaceInput() },
                             modifier = Modifier.weight(1f),
                             containerColor = MaterialTheme.colorScheme.errorContainer
