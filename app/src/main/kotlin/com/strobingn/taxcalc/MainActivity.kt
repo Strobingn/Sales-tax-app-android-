@@ -1,5 +1,6 @@
 package com.strobingn.taxcalc
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,7 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -77,71 +81,103 @@ fun CalculatorScreen(viewModel: TaxCalcViewModel, counties: List<County>, paddin
     val selectedCounty by viewModel.selectedCounty.collectAsState()
     val input by viewModel.inputAmount.collectAsState()
     val result by viewModel.calculationResult.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     var showCountySheet by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = mode == CalcMode.FORWARD, onClick = { viewModel.setMode(CalcMode.FORWARD) }, label = { Text("Forward (Add Tax)") }, modifier = Modifier.weight(1f))
-            FilterChip(selected = mode == CalcMode.REVERSE, onClick = { viewModel.setMode(CalcMode.REVERSE) }, label = { Text("Reverse (Find Pre-Tax)") }, modifier = Modifier.weight(1f))
-        }
+    Box(Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = mode == CalcMode.FORWARD, onClick = { viewModel.setMode(CalcMode.FORWARD) }, label = { Text("Forward (Add Tax)") }, modifier = Modifier.weight(1f))
+                FilterChip(selected = mode == CalcMode.REVERSE, onClick = { viewModel.setMode(CalcMode.REVERSE) }, label = { Text("Reverse (Find Pre-Tax)") }, modifier = Modifier.weight(1f))
+            }
 
-        OutlinedCard(modifier = Modifier.fillMaxWidth().clickable { showCountySheet = true }) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("County / Jurisdiction", style = MaterialTheme.typography.labelSmall)
-                    Text(selectedCounty?.name ?: "Select county", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            OutlinedCard(modifier = Modifier.fillMaxWidth().clickable { showCountySheet = true }) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("County / Jurisdiction", style = MaterialTheme.typography.labelSmall)
+                        Text(selectedCounty?.name ?: "Select county", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Text(selectedCounty?.let { "${it.taxRate}%" } ?: "", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.ArrowDropDown, null)
                 }
-                Text(selectedCounty?.let { "${it.taxRate}%" } ?: "", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                Icon(Icons.Default.ArrowDropDown, null)
             }
-        }
 
-        OutlinedTextField(value = input, onValueChange = { viewModel.setInputAmount(it) }, label = { Text(if (mode == CalcMode.FORWARD) "Subtotal Amount ($)" else "Total Amount Paid ($)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, textStyle = MaterialTheme.typography.headlineMedium)
+            OutlinedTextField(value = input, onValueChange = { viewModel.setInputAmount(it) }, label = { Text(if (mode == CalcMode.FORWARD) "Subtotal Amount ($)" else "Total Amount Paid ($)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, textStyle = MaterialTheme.typography.headlineMedium)
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(10, 25, 50, 100, 500).forEach { amt ->
-                AssistChip(onClick = { viewModel.setInputAmount(amt.toString()) }, label = { Text("$$amt") })
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(10, 25, 50, 100, 500).forEach { amt ->
+                    AssistChip(onClick = { viewModel.setInputAmount(amt.toString()) }, label = { Text("$$amt") })
+                }
             }
-        }
 
-        Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.calculateAndSave() }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
-            Icon(Icons.Default.Calculate, null)
-            Spacer(Modifier.width(8.dp))
-            Text("CALCULATE & SAVE", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        }
+            Button(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.calculateAndSave() }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
+                Icon(Icons.Default.Calculate, null)
+                Spacer(Modifier.width(8.dp))
+                Text("CALCULATE & SAVE", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
 
-        AnimatedVisibility(visible = result != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
-            result?.let { res ->
-                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(if (mode == CalcMode.FORWARD) "BREAKDOWN" else "REVERSE BREAKDOWN", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        val taxFraction = if (mode == CalcMode.FORWARD) (res.taxAmount / res.outputAmount).coerceIn(0.0, 1.0) else (res.taxAmount / res.inputAmount).coerceIn(0.0, 1.0)
-                        val preFraction = 1.0 - taxFraction
-                        Row(Modifier.fillMaxWidth().height(28.dp).clip(RoundedCornerShape(8.dp))) {
-                            Box(Modifier.weight(preFraction.toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
-                            Box(Modifier.weight(taxFraction.toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(MaterialTheme.colorScheme.tertiary))
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Pre-Tax / Subtotal", color = MaterialTheme.colorScheme.onPrimaryContainer); Text(formatCurrency(if (mode == CalcMode.FORWARD) res.inputAmount else res.outputAmount)) }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Tax (${selectedCounty?.taxRate ?: 0}%)", color = MaterialTheme.colorScheme.onPrimaryContainer); Text(formatCurrency(res.taxAmount)) }
-                        HorizontalDivider()
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(if (mode == CalcMode.FORWARD) "TOTAL DUE" else "PRE-TAX AMOUNT", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text(formatCurrency(if (mode == CalcMode.FORWARD) res.outputAmount else res.outputAmount), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
+            AnimatedVisibility(visible = result != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                result?.let { res ->
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(if (mode == CalcMode.FORWARD) "BREAKDOWN" else "REVERSE BREAKDOWN", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            val taxFraction = if (mode == CalcMode.FORWARD) (res.taxAmount / res.outputAmount).coerceIn(0.0, 1.0) else (res.taxAmount / res.inputAmount).coerceIn(0.0, 1.0)
+                            val preFraction = 1.0 - taxFraction
+                            Row(Modifier.fillMaxWidth().height(28.dp).clip(RoundedCornerShape(8.dp))) {
+                                Box(Modifier.weight(preFraction.toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
+                                Box(Modifier.weight(taxFraction.toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(MaterialTheme.colorScheme.tertiary))
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Pre-Tax / Subtotal", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text(formatCurrency(if (mode == CalcMode.FORWARD) res.inputAmount else res.outputAmount), modifier = Modifier.clickable { clipboard.setText(AnnotatedString(formatCurrency(if (mode == CalcMode.FORWARD) res.inputAmount else res.outputAmount))) })
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Tax (${selectedCounty?.taxRate ?: 0}%)", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text(formatCurrency(res.taxAmount), modifier = Modifier.clickable { clipboard.setText(AnnotatedString(formatCurrency(res.taxAmount))) })
+                            }
+                            HorizontalDivider()
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(if (mode == CalcMode.FORWARD) "TOTAL DUE" else "PRE-TAX AMOUNT", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(formatCurrency(if (mode == CalcMode.FORWARD) res.outputAmount else res.outputAmount), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { clipboard.setText(AnnotatedString(formatCurrency(if (mode == CalcMode.FORWARD) res.outputAmount else res.outputAmount))) })
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (result != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { viewModel.clearResult() }, modifier = Modifier.weight(1f)) { Text("Clear") }
-                Button(onClick = { /* TODO share */ }, modifier = Modifier.weight(1f)) { Text("Share") }
+            if (result != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { viewModel.clearResult() }, modifier = Modifier.weight(1f)) { Text("Clear") }
+                    Button(onClick = {
+                        val shareText = buildString {
+                            appendLine("TaxCalc Pro Calculation")
+                            appendLine("County: ${selectedCounty?.name} (${selectedCounty?.taxRate}%)")
+                            if (mode == CalcMode.FORWARD) {
+                                appendLine("Subtotal: ${formatCurrency(result!!.inputAmount)}")
+                                appendLine("Tax: ${formatCurrency(result!!.taxAmount)}")
+                                appendLine("Total: ${formatCurrency(result!!.outputAmount)}")
+                            } else {
+                                appendLine("Total Paid: ${formatCurrency(result!!.inputAmount)}")
+                                appendLine("Tax: ${formatCurrency(result!!.taxAmount)}")
+                                appendLine("Pre-Tax: ${formatCurrency(result!!.outputAmount)}")
+                            }
+                        }
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, shareText)
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Share calculation"))
+                    }, modifier = Modifier.weight(1f)) { Text("Share") }
+                }
             }
         }
+
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp))
     }
 
     if (showCountySheet) {
@@ -161,35 +197,60 @@ fun CalculatorScreen(viewModel: TaxCalcViewModel, counties: List<County>, paddin
 @Composable
 fun CountiesScreen(viewModel: TaxCalcViewModel, counties: List<County>, padding: PaddingValues) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingCounty by remember { mutableStateOf<County?>(null) }
     var search by remember { mutableStateOf("") }
     val filtered = counties.filter { it.name.contains(search, ignoreCase = true) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(Modifier.padding(padding).padding(16.dp)) {
-        OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search counties") }, modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Search, null) })
-        Spacer(Modifier.height(12.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(filtered) { county -> CountyCard(county, onEdit = { viewModel.editCounty(it) }, onDelete = { viewModel.deleteCounty(it) }, onToggleFavorite = { viewModel.toggleFavorite(it) }) } }
+    Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search counties") }, modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Search, null) })
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(filtered) { county -> CountyCard(county, onEdit = { editingCounty = it; showAddDialog = true }, onDelete = { viewModel.deleteCounty(it) }, onToggleFavorite = { viewModel.toggleFavorite(it) }) } }
+        }
+
+        FloatingActionButton(onClick = { editingCounty = null; showAddDialog = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) { Icon(Icons.Default.Add, "Add County") }
+
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
-    FloatingActionButton(onClick = { showAddDialog = true }, modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd)) { Icon(Icons.Default.Add, "Add County") }
-    if (showAddDialog) { AddEditCountyDialog(onDismiss = { showAddDialog = false }, onSave = { name, rate -> viewModel.addCounty(name, rate); showAddDialog = false }) }
+
+    if (showAddDialog) {
+        AddEditCountyDialog(countyToEdit = editingCounty, onDismiss = { showAddDialog = false; editingCounty = null }, onSave = { name, rate ->
+            if (editingCounty != null) {
+                viewModel.editCounty(editingCounty!!.copy(name = name, taxRate = rate))
+            } else {
+                viewModel.addCounty(name, rate)
+            }
+            showAddDialog = false
+            editingCounty = null
+        })
+    }
 }
 
 @Composable
 fun CountyCard(county: County, onEdit: (County) -> Unit, onDelete: (County) -> Unit, onToggleFavorite: (County) -> Unit) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
     Card {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onToggleFavorite(county) }) { Icon(if (county.isFavorite) Icons.Default.Star else Icons.Default.StarBorder, null, tint = if (county.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
             Column(Modifier.weight(1f)) { Text(county.name, fontWeight = FontWeight.Bold); Text("${county.taxRate}%", color = MaterialTheme.colorScheme.primary) }
             IconButton(onClick = { onEdit(county) }) { Icon(Icons.Default.Edit, null) }
-            IconButton(onClick = { onDelete(county) }) { Icon(Icons.Default.Delete, null) }
+            IconButton(onClick = { showDeleteConfirm = true }) { Icon(Icons.Default.Delete, null) }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(onDismissRequest = { showDeleteConfirm = false }, title = { Text("Delete County?") }, text = { Text("This will remove ${county.name} from your list.") }, confirmButton = { Button(onClick = { onDelete(county); showDeleteConfirm = false }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } })
     }
 }
 
 @Composable
-fun AddEditCountyDialog(onDismiss: () -> Unit, onSave: (String, Double) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var rateStr by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Add New County") }, text = { Column { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("County Name") }); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = rateStr, onValueChange = { rateStr = it }, label = { Text("Tax Rate %") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)) } }, confirmButton = { Button(onClick = { val rate = rateStr.toDoubleOrNull() ?: 0.0; if (name.isNotBlank() && rate > 0) onSave(name, rate) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+fun AddEditCountyDialog(countyToEdit: County?, onDismiss: () -> Unit, onSave: (String, Double) -> Unit) {
+    var name by remember { mutableStateOf(countyToEdit?.name ?: "") }
+    var rateStr by remember { mutableStateOf(countyToEdit?.taxRate?.toString() ?: "") }
+
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(if (countyToEdit != null) "Edit County" else "Add New County") }, text = { Column { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("County Name") }); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = rateStr, onValueChange = { rateStr = it }, label = { Text("Tax Rate %") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)) } }, confirmButton = { Button(onClick = { val rate = rateStr.toDoubleOrNull() ?: 0.0; if (name.isNotBlank() && rate > 0) onSave(name, rate) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
 @Composable
