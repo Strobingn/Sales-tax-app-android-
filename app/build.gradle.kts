@@ -70,6 +70,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // Material Components (needed for Theme.Material3.* in themes.xml)
+    implementation("com.google.android.material:material:1.12.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
