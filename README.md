@@ -2,7 +2,7 @@
 
 Modern Android Sales Tax & Reverse Sales Tax Calculator
 
-Fancy Material 3 app with dark/light/dynamic color themes, per-county editable tax rates, full persistent calculation history (Room), visual breakdowns, quick amounts, and GitHub Actions that builds installable APKs on every push.
+Fancy Material 3 app with dark/light/dynamic color themes, per-county editable tax rates, full persistent calculation history (Room), visual breakdowns, quick amounts, and GitHub Actions that builds installable APKs on every push or manual trigger.
 
 ## Features
 - Forward & Reverse calculators
@@ -16,16 +16,23 @@ Fancy Material 3 app with dark/light/dynamic color themes, per-county editable t
 - Haptics + spring animations
 - Fully offline
 
-## Build & Install
+## How to build the APK (easiest way)
 
-The included GitHub Actions workflow builds debug APK on every push and allows manual trigger for release builds.
+1. Go to **Actions** tab in this repo
+2. Select the **Android CI/CD** workflow
+3. Click **Run workflow** (green button)
+4. Choose branch `main`
+5. Click **Run workflow**
+6. When finished, download the `app-debug-apk` artifact
+7. Install on your phone (allow unknown sources)
 
-After push, go to Actions tab → download `app-debug-apk` artifact → install on your phone.
+The workflow now uses `gradle/actions/setup-gradle` so it works reliably without needing a committed gradle wrapper.
 
-## Run the Action Manually
-1. Go to your repo Actions
-2. Select "Android CI/CD"
-3. Click "Run workflow" (you can choose branch)
-4. Download the APK from the artifact
+## Local development (Android Studio recommended)
 
-Built for you by Grok - raw, complete, no bullshit.
+1. Clone the repo
+2. Open in Android Studio
+3. It will prompt to sync / generate wrapper if needed
+4. Or run in terminal: `gradle wrapper --gradle-version 8.9` then `./gradlew assembleDebug`
+
+Built raw and complete. No half-measures.
