@@ -33,9 +33,7 @@ class TaxCalcViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch {
-            if (dao.getCountyCount() == 0) {
-                dao.insertAll(TaxDatabase.DEFAULT_COUNTIES)
-            }
+            if (dao.getCountyCount() == 0) { dao.insertAll(TaxDatabase.DEFAULT_COUNTIES) }
             val first = dao.getAllCounties().first().firstOrNull()
             if (first != null) _selectedCounty.value = first
         }
@@ -50,86 +48,29 @@ class TaxCalcViewModel(application: Application) : AndroidViewModel(application)
         val county = _selectedCounty.value ?: return
         val amount = _inputAmount.value.toDoubleOrNull() ?: return
         if (amount <= 0) return
-
         val rate = county.taxRate / 100.0
-        val (tax, output) = if (_mode.value == CalcMode.FORWARD) {
-            val t = amount * rate
-            t to (amount + t)
-        } else {
-            val pre = amount / (1 + rate)
-            (amount - pre) to pre
-        }
-
-        val hist = CalculationHistory(
-            timestamp = System.currentTimeMillis(),
-            mode = _mode.value.name,
-            countyName = county.name,
-            taxRate = county.taxRate,
-            inputAmount = amount,
-            taxAmount = tax,
-            outputAmount = output
-        )
-
+        val (tax, output) = if (_mode.value == CalcMode.FORWARD) { val t = amount * rate; t to (amount + t) } else { val pre = amount / (1 + rate); (amount - pre) to pre }
+        val hist = CalculationHistory(timestamp = System.currentTimeMillis(), mode = _mode.value.name, countyName = county.name, taxRate = county.taxRate, inputAmount = amount, taxAmount = tax, outputAmount = output)
         viewModelScope.launch {
             dao.insertHistory(hist)
-            _calculationResult.value = CalculationResult(
-                inputAmount = amount,
-                taxAmount = tax,
-                outputAmount = output,
-                mode = _mode.value
-            )
+            _calculationResult.value = CalculationResult(inputAmount = amount, taxAmount = tax, outputAmount = output, mode = _mode.value)
         }
     }
 
-    fun clearResult() {
-        _calculationResult.value = null
-        _inputAmount.value = ""
-    }
-
-    fun addCounty(name: String, rate: Double) {
-        viewModelScope.launch {
-            dao.insertCounty(County(name = name, taxRate = rate))
-        }
-    }
-
-    fun editCounty(county: County) {
-        viewModelScope.launch {
-            dao.updateCounty(county)
-        }
-    }
-
-    fun deleteCounty(county: County) {
-        viewModelScope.launch { dao.deleteCounty(county) }
-    }
-
-    fun toggleFavorite(county: County) {
-        viewModelScope.launch {
-            dao.updateCounty(county.copy(isFavorite = !county.isFavorite))
-        }
-    }
+    fun clearResult() { _calculationResult.value = null; _inputAmount.value = "" }
+    fun addCounty(name: String, rate: Double) { viewModelScope.launch { dao.insertCounty(County(name = name, taxRate = rate)) } }
+    fun editCounty(county: County) { viewModelScope.launch { dao.updateCounty(county) } }
+    fun deleteCounty(county: County) { viewModelScope.launch { dao.deleteCounty(county) } }
+    fun toggleFavorite(county: County) { viewModelScope.launch { dao.updateCounty(county.copy(isFavorite = !county.isFavorite)) } }
 
     fun loadFromHistory(item: CalculationHistory) {
         _mode.value = if (item.mode == "FORWARD") CalcMode.FORWARD else CalcMode.REVERSE
         _inputAmount.value = item.inputAmount.toString()
         val existing = counties.value.find { it.name == item.countyName }
-        _selectedCounty.value = existing ?: County(
-            id = -1L,
-            name = item.countyName,
-            taxRate = item.taxRate
-        )
-        _calculationResult.value = CalculationResult(
-            inputAmount = item.inputAmount,
-            taxAmount = item.taxAmount,
-            outputAmount = item.outputAmount,
-            mode = _mode.value
-        )
+        _selectedCounty.value = existing ?: County(id = -1L, name = item.countyName, taxRate = item.taxRate)
+        _calculationResult.value = CalculationResult(inputAmount = item.inputAmount, taxAmount = item.taxAmount, outputAmount = item.outputAmount, mode = _mode.value)
         _selectedTab.value = 0
     }
 }
 
-data class CalculationResult(
-    val inputAmount: Double,
-    val taxAmount: Double,
-    val outputAmount: Double,
-    val mode: CalcMode
-)
+data class CalculationResult(val inputAmount: Double, val taxAmount: Double, val outputAmount: Double, val mode: CalcMode)
