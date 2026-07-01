@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "TaxCalcPro"
+rootProject.name = "TaxCalc Pro"
 include(":app")
