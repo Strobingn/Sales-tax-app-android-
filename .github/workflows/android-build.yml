@@ -34,14 +34,14 @@ jobs:
         with:
           packages: 'platforms;android-35 build-tools;35.0.0 platform-tools'
 
-      # LICENSE ACCEPTANCE - this was the missing piece causing exit code 1 failures
+      # LICENSE ACCEPTANCE
       - name: Accept Android SDK Licenses
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
           yes | sdkmanager --licenses || true
 
       - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace --no-daemon --warning-mode all
+        run: ./gradlew assembleDebug --stacktrace --no-daemon --warning-mode all
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
@@ -82,8 +82,8 @@ jobs:
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
           yes | sdkmanager --licenses || true
 
-      - name: Build Release APK
-        run: gradle assembleRelease --stacktrace --no-daemon --warning-mode all
+      - name: Build Release APK (unsigned)
+        run: ./gradlew assembleRelease --stacktrace --no-daemon --warning-mode all
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
