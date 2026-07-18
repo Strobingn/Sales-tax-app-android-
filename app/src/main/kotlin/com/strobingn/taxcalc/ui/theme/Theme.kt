@@ -13,63 +13,73 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF0D9488),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFCCFBF1),
-    onPrimaryContainer = Color(0xFF134E4A),
-    secondary = Color(0xFF134E4A),
+    primary = Color(0xFF455A64),      // Dark slate grey (buttons, primary actions)
+    onPrimary = Color.White,          // White text on primary
+    primaryContainer = Color(0xFFE0E0E0),  // Light grey container
+    onPrimaryContainer = Color(0xFF212121), // Dark grey text
+    
+    secondary = Color(0xFF757575),    // Medium grey (secondary elements)
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFB2DFDB),
-    onSecondaryContainer = Color(0xFF134E4A),
-    tertiary = Color(0xFF14B8A6),
-    onTertiary = Color.Black,
-    tertiaryContainer = Color(0xFF99F6E4),
-    onTertiaryContainer = Color(0xFF134E4A),
-    surface = Color(0xFFFAFAF9),
-    onSurface = Color(0xFF1C1917),
-    surfaceVariant = Color(0xFFF5F5F4),
-    onSurfaceVariant = Color(0xFF78716C),
-    surfaceContainer = Color(0xFFF5F5F4),
-    error = Color(0xFFDC2626),
+    secondaryContainer = Color(0xFFF5F5F5),
+    onSecondaryContainer = Color(0xFF424242),
+    
+    tertiary = Color(0xFF607D8B),      // Blue grey accent
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFECEFF1),
+    onTertiaryContainer = Color(0xFF37474F),
+    
+    surface = Color(0xFFFAFAFA),       // Very light grey background
+    onSurface = Color(0xFF212121),    // Dark grey text
+    surfaceVariant = Color(0xFFE0E0E0),
+    onSurfaceVariant = Color(0xFF424242),
+    surfaceContainer = Color(0xFFF5F5F5),
+    
+    error = Color(0xFFB00020),        // Modern red
     onError = Color.White,
-    errorContainer = Color(0xFFFFE4E6),
-    onErrorContainer = Color(0xFF7F1D1D),
-    background = Color(0xFFFAFAF9),
-    onBackground = Color(0xFF1C1917),
-    outline = Color(0xFFA8A29E)
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    
+    background = Color(0xFFFAFAFA),    // Very light grey
+    onBackground = Color(0xFF212121),  // Dark grey
+    outline = Color(0xFFBDBDBD)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF14B8A6),
-    onPrimary = Color.Black,
-    primaryContainer = Color(0xFF134E4A),
-    onPrimaryContainer = Color(0xFFCCFBF1),
-    secondary = Color(0xFF5EEAD4),
+    primary = Color(0xFF90A4AE),      // Light blue grey (buttons glow)
+    onPrimary = Color.Black,          // Black text on primary
+    primaryContainer = Color(0xFF607D8B),
+    onPrimaryContainer = Color.White,
+    
+    secondary = Color(0xFFAFAFAF),    // Light grey
     onSecondary = Color.Black,
-    secondaryContainer = Color(0xFF115E59),
-    onSecondaryContainer = Color(0xFFCCFBF1),
-    tertiary = Color(0xFF2DD4BF),
+    secondaryContainer = Color(0xFF424242),
+    onSecondaryContainer = Color(0xFFE0E0E0),
+    
+    tertiary = Color(0xFF78909C),      // Light blue grey accent
     onTertiary = Color.Black,
-    tertiaryContainer = Color(0xFF0F766E),
-    onTertiaryContainer = Color(0xFF99F6E4),
-    surface = Color(0xFF1C1917),
-    onSurface = Color(0xFFE7E5E4),
-    surfaceVariant = Color(0xFF292524),
-    onSurfaceVariant = Color(0xFFA8A29E),
-    surfaceContainer = Color(0xFF292524),
-    error = Color(0xFFFF7C7C),
+    tertiaryContainer = Color(0xFF455A64),
+    onTertiaryContainer = Color(0xFFECEFF1),
+    
+    surface = Color(0xFF121212),       // Very dark grey background
+    onSurface = Color(0xFFE0E0E0),    // Light grey text
+    surfaceVariant = Color(0xFF1E1E1E),
+    onSurfaceVariant = Color(0xFFBDBDBD),
+    surfaceContainer = Color(0xFF212121),
+    
+    error = Color(0xFFCF6679),        // Modern error color
     onError = Color.Black,
-    errorContainer = Color(0xFF7F1D1D),
-    onErrorContainer = Color(0xFFFFE4E6),
-    background = Color(0xFF1C1917),
-    onBackground = Color(0xFFE7E5E4),
-    outline = Color(0xFF57534E)
+    errorContainer = Color(0xFF410002),
+    onErrorContainer = Color(0xFFFFDAD6),
+    
+    background = Color(0xFF121212),    // Very dark grey
+    onBackground = Color(0xFFE0E0E0), // Light grey
+    outline = Color(0xFF424242)
 )
 
 @Composable
 fun TaxCalcTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,  // Disabled for consistent grey theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
